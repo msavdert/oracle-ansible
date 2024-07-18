@@ -49,14 +49,14 @@ all:
     node_epel_repo: false # add epel repository? default: false
     node_packages: # packages to be installed current nodes
       dnf: []
-      #    - nginx
+    #    - nginx
       apt: []
     #    - apache
     node_packages_default: # used according to , if  not set
       dnf:
-        - sudo,cronie
+        - sudo,cronie,hostname
       apt:
-        - sudo,cron
+        - sudo,cron,hostname
 
     #-----------------------------------------------------------------
     # NODE_FIREWALL
