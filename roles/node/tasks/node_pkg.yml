@@ -1,0 +1,52 @@
+---
+#--------------------------------------------------------------#
+# Install node repo                                  [node_repo]
+#--------------------------------------------------------------#
+- name: node_pkg.yml | setup node repo
+  tags: node_repo
+  block:
+    - name: node_pkg.yml | add epel repo file | RedHat
+      tags: [node_repo_epel]
+      environment: "{{ proxy_env | default({}) }}"
+      ansible.builtin.package:
+        name: "https://dl.fedoraproject.org/pub/epel/epel-release-latest-{{ ansible_distribution_major_version }}.noarch.rpm"
+        state: present
+        disable_gpg_check: true
+      register: package_status
+      until: package_status is success
+      delay: 5
+      retries: 3
+      when: node_epel_repo|bool and ansible_os_family == "RedHat"
+
+    - name: node_pkg.yml | update apt cache | Debian
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 3600
+      when: ansible_pkg_mgr == "apt"
+
+    - name: node_pkg.yml | update yum cache | RedHat
+      ansible.builtin.yum:
+        update_cache: yes
+      when: ansible_pkg_mgr == "yum"
+
+    - name: node_pkg.yml | update dnf cache | RedHat
+      ansible.builtin.dnf:
+        update_cache: yes
+      when: ansible_pkg_mgr == "dnf"
+
+#-----------------------------------------------------------------#
+# Install packages                         [node_pkg,node_packages]
+#-----------------------------------------------------------------#
+- name: node_pkg.yml | install node packages
+  tags: node_pkg
+  block:
+    - name: node_pkg.yml | install default node packages
+      environment: "{{ proxy_env | default({}) }}"
+      package: name={{ item }} state=present
+      with_items: "{{ node_default_packages | default(node_packages_default[ansible_pkg_mgr]) | default([]) }}"
+
+    - name: node_pkg.yml | install extra node packages
+      tags: [node_packages]
+      environment: "{{ proxy_env | default({}) }}"
+      package: name={{ item }} state=latest
+      with_items: "{{ node_packages[ansible_pkg_mgr] }}"

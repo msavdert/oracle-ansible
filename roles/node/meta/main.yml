@@ -1,0 +1,14 @@
+---
+galaxy_info:
+  role_name: node
+  description: setup node
+  min_ansible_version: "2.9"
+  author: 'Melih Savdert'
+  license: GPLv3
+  platforms:
+    - name: EL
+      versions: [ 8 , 9 ]
+  galaxy_tags:
+    - ora_ansible
+    - node
+...

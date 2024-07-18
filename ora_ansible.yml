@@ -1,0 +1,121 @@
+---
+all:
+  children:
+    #---------------------------------#
+    # ora_oel8                        #
+    #---------------------------------#
+    ora_oel8:
+      hosts: {
+          oel8:
+            {
+              ansible_host: 150.136.124.110,
+              ansible_port: 22161,
+              ansible_user: root,
+              ansible_ssh_pass: root,
+            },
+        } # ansible_ssh_private_key_file=./files/ansible
+
+    #----------------------------------#
+    # ora_oel9                         #
+    #----------------------------------#
+    ora_oel9:
+      hosts:
+        {
+          oel9:
+            {
+              ansible_host: 150.136.124.110,
+              ansible_port: 22162,
+              ansible_user: root,
+              ansible_ssh_pass: root,
+            },
+        }
+
+  ####################################################################
+  #                             VARS                                 #
+  ####################################################################
+  vars:
+    #================================================================#
+    #                         VARS: NODE                             #
+    #================================================================#
+
+    #-----------------------------------------------------------------
+    # NODE_PACKAGE
+    #-----------------------------------------------------------------
+    proxy_env: # global proxy env when downloading packages
+      no_proxy: "localhost,127.0.0.1,10.0.0.0/8,192.168.0.0/16,*.pigsty,*.aliyun.com,mirrors.*,*.myqcloud.com,*.tsinghua.edu.cn"
+      # http_proxy:  # set your proxy here: e.g http://user:pass@proxy.xxx.com
+      # https_proxy: # set your proxy here: e.g http://user:pass@proxy.xxx.com
+      # all_proxy:   # set your proxy here: e.g http://user:pass@proxy.xxx.com
+    node_epel_repo: false # add epel repository? default: false
+    node_packages: # packages to be installed current nodes
+      dnf: []
+      #    - nginx
+      apt: []
+    #    - apache
+    node_packages_default: # used according to , if  not set
+      dnf:
+        - sudo,cronie
+      apt:
+        - sudo,cron
+
+    #-----------------------------------------------------------------
+    # NODE_FIREWALL
+    #-----------------------------------------------------------------
+    node_disable_selinux: true # disable node selinux? default: true
+    node_disable_firewall: true # disable node firewall? default: true
+
+    #-----------------------------------------------------------------
+    # NODE_PATCH
+    # https://github.com/voidquark/el_patching
+    #-----------------------------------------------------------------
+    node_patching_required_packages: "yum-utils" # It is required to install yum-utils as this role verifies reboot with `needs-restarting`.
+    node_patching_reboot_timeout: 600 # By default auto reboot is disabled but the default timeout value is set to 5 minutes. Value is in seconds.
+    node_patching_method: "security" # By default apply only security patches on the target host. Possible values "security"/"bugfix"/"all"
+    node_patching_auto_reboot: false # By default do not reboot the target host. Only verify if a reboot is required.
+    node_patching_update_cache: true # Force dnf to check if cache is out of date and re-download if needed.
+    node_patching_exclude_packages: [] # Exclude packages during patching.
+    #  - tar
+    #  - zip
+
+    #-----------------------------------------------------------------
+    # NODE_ADMIN
+    #-----------------------------------------------------------------
+    node_data: /data # node main data directory,  by default
+    node_admin_enabled: false # create a admin user on target node?
+    node_admin_uid: 88 # uid and gid for node admin user
+    node_admin_username: dba # name of node admin user,  by default
+    node_admin_ssh_exchange: false # exchange admin ssh key among node cluster
+    node_admin_pk_current: false # add current user's ssh pk to admin authorized_keys
+    node_admin_pk_list: [] # ssh public keys to be added to admin user
+
+    #-----------------------------------------------------------------
+    # NODE_TIME
+    #-----------------------------------------------------------------
+    node_timezone: "" # setup node timezone, empty string to skip
+    node_ntp_enabled: true # enable chronyd time sync service?
+    node_ntp_servers: # ntp servers in
+      - pool pool.ntp.org iburst
+    node_crontab_overwrite: true # overwrite or append to ?
+    node_crontab: [] # crontab entries in
+
+    #-----------------------------------------------------------------
+    # NODE_PRE-CHECKS
+    #-----------------------------------------------------------------
+    minimal_ansible_version: 2.11.0
+    os_valid_distributions:
+      - RedHat
+      - Rocky
+      - OracleLinux
+
+    os_minimum_versions:
+      RedHat: 8
+      Rocky: 8.4
+      OracleLinux: 8
+
+    #================================================================#
+    #                         VARS: ORACLE                           #
+    #================================================================#
+
+    #-----------------------------------------------------------------
+    # ORACLE_INSTALL
+    #-----------------------------------------------------------------

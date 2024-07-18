@@ -1,0 +1,32 @@
+node_patching_reboot_timeout: 600 # By default auto reboot is disabled but the default timeout value is set to 5 minutes. Value is in seconds.
+node_patching_method: "security" # By default apply only security patches on the target host. Possible values "security"/"bugfix"/"all"
+node_patching_auto_reboot: false # By default do not reboot the target host. Only verify if a reboot is required.
+node_patching_update_cache: true # Force dnf to check if cache is out of date and re-download if needed.
+node_patching_exclude_packages: [] # Exclude packages during patching.
+
+node_disable_selinux: true # disable node selinux? default: true
+node_disable_firewall: true # disable node firewall? default: true
+
+node_epel_repo: true # add epel repository? default: false
+node_packages: # packages to be installed current nodes
+  dnf:
+    - vim
+  apt: []
+#    - apache
+node_packages_default: # used according to , if  not set
+  dnf:
+    - sudo,cronie
+  apt:
+    - sudo,cron
+
+node_timezone: "America/New_York"
+node_ntp_servers:
+  - pool us.pool.ntp.org iburst
+
+node_admin_enabled: true # create a admin user on target node?
+node_admin_uid: 88 # uid and gid for node admin user
+node_admin_username: dba # name of node admin user,  by default
+node_admin_ssh_exchange: false # exchange admin ssh key among node cluster
+node_admin_pk_current: false # add current user's ssh pk to admin authorized_keys
+node_admin_pk_list:
+  - "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDP70jakwSpdzqOQ+1EFIZcNg3O1Nc+LznuZn30wff9oOCmuX7+/ut497sjMwLO/tXhw8sU1U7EXR/MnSM/mHmjgAH0L2L2/2yIpAV5xMBtoSsXtI+fCYTnBNBjmdYeDwIC5kWnoRQwdMkmKpHrtDyvl5DhG+C03ThnPXhLBwGXVqRx4mITQYwSF2wmhM8xe2ZSRRYpim75qwentzHrWZ3eFLKFa5HvDZmBJdn5rEHZZu41Lj8bQBEptSQtYxwBMzIOrA35oCfGLCO/VX+azKMmaX2GaZwFNHUNl05Hil+KkdS9zsiH7yr04Gri0lTIJWeZepskWlL2XR6VLdQrIY1D melihsavdert@Melihs-Air"

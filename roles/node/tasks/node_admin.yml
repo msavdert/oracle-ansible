@@ -1,0 +1,63 @@
+---
+#--------------------------------------------------------------#
+# Stage 1: Create default users/groups              [node_admin]
+#--------------------------------------------------------------#
+- name: node_admin.yml | create os node users and groups
+  tags: node_admin
+  when: node_admin_enabled
+  block:
+    # admin user , group, privileges
+    - name: node_admin.yml | create os user group admin
+      group: name=admin gid={{ node_admin_uid }}
+    - name: create os user admin
+      user: name={{ node_admin_username }} uid={{ node_admin_uid }} home=/home/{{ node_admin_username }} group=admin generate_ssh_key=yes
+
+    - name: node_admin.yml | grant admin group nopass sudo
+      copy:
+        content: "%admin ALL=(ALL) NOPASSWD: ALL"
+        dest: /etc/sudoers.d/{{ node_admin_username }}
+        mode: 0440
+
+    #    - name: node_admin.yml | touch admin user ssh config
+    #      copy: src=ssh.config dest=/home/{{ node_admin_username }}/.ssh/config mode=0600 owner={{ node_admin_username }} group=admin
+
+    #    - name: node_admin.yml | set ssh config no host checking
+    #      lineinfile:
+    #        path: /home/{{ node_admin_username }}/.ssh/config
+    #        regexp: "^StrictHostKeyChecking="
+    #        line: StrictHostKeyChecking=no
+
+    # admin ssh exchange among cluster
+    - name: node_admin.yml | fetch admin public keys
+      shell: cat /home/{{ node_admin_username }}/.ssh/id_rsa.pub
+      args: { executable: /bin/bash }
+      register: admin_ssh_keys
+
+    # for all hosts, copy their admin ssh public key to each other
+    - name: node_admin.yml | exchange all admin ssh keys
+      when: node_admin_ssh_exchange|bool
+      authorized_key: user={{ node_admin_username }} key="{{ item[0] }}"
+      ignore_errors: true
+      delegate_to: "{{ item[1] }}"
+      with_nested:
+        - "{{ admin_ssh_keys.stdout }}"
+        - "{{ play_hosts }}"
+
+    # add additional public keys
+    - name: node_admin.yml | add admin public keys
+      tags: node_admin_pk_list
+      when: node_admin_pk_list is defined and node_admin_pk_list|length > 0
+      authorized_key: user={{ node_admin_username }} key="{{ item }}"
+      ignore_errors: true
+      with_items:
+        - "{{ node_admin_pk_list }}"
+
+    # add current user public keys in ~/.ssh/id*.pub
+    - name: node_admin.yml | add current user public keys
+      tags: node_admin_pk_current
+      when: node_admin_pk_current|bool
+      authorized_key:
+        user: "{{ node_admin_username }}"
+        key: "{{ lookup('file', item) }}"
+      with_fileglob:
+        - "~/.ssh/id*.pub"

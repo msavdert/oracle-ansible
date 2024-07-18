@@ -1,0 +1,10 @@
+#!/usr/bin/env ansible-playbook
+---
+- name: Oracle Database
+  become: yes
+  hosts: all
+  gather_facts: yes
+
+  roles:
+    - { role: node, tags: node }
+

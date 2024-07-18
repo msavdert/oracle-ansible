@@ -1,0 +1,54 @@
+---
+#--------------------------------------------------------------#
+# NODE_PATCH                                        [node_patch]
+#--------------------------------------------------------------#
+- name: node_patch.yml | atching node
+  tags: node_patch
+  block:
+    - name: node_patch.yml | ensure that need-restarting binary is present
+      ansible.builtin.dnf:
+        name: "{{ node_patching_required_packages }}"
+        state: present
+    
+    - name: node_patch.yml | update all packages
+      ansible.builtin.dnf:
+        name: "*"
+        state: latest
+        update_cache: "{{ node_patching_update_cache | default(omit) }}"
+        exclude: "{{ node_patching_exclude_packages | default(omit) }}"
+      when: node_patching_method == "all"
+    
+    - name: node_patch.yml | apply security patches only
+      ansible.builtin.dnf:
+        name: "*"
+        security: true
+        state: latest
+        update_cache: "{{ node_patching_update_cache | default(omit) }}"
+        exclude: "{{ node_patching_exclude_packages | default(omit) }}"
+      when: node_patching_method == "security"
+    
+    - name: node_patch.yml | apply bugfix patches only
+      ansible.builtin.dnf:
+        name: "*"
+        bugfix: true
+        state: latest
+        update_cache: "{{ node_patching_update_cache | default(omit) }}"
+        exclude: "{{ node_patching_exclude_packages | default(omit) }}"
+      when: node_patching_method == "bugfix"
+    
+    - name: node_patch.yml | verify if restart is required
+      ansible.builtin.command:
+        cmd: needs-restarting --reboothint
+      register: __node_patching_need_restart
+      failed_when: __node_patching_need_restart.rc > 1
+    
+    - name: node_patch.yml | inform user if reboot is required
+      ansible.builtin.debug:
+        msg: "Reboot is required to apply patches."
+      when: __node_patching_need_restart.rc == 1
+    
+    - name: node_patch.yml | reboot host
+      ansible.builtin.reboot:
+        reboot_timeout: "{{ node_patching_reboot_timeout }}"
+      when: node_patching_auto_reboot | bool and __node_patching_need_restart.rc == 1
+  when: ansible_os_family == "RedHat"
