@@ -1,0 +1,103 @@
+---
+- name: oradb_install | check if oracle has already been installed
+  command: grep -q "^{{ oracle_db_name }}:" /etc/oratab
+  ignore_errors: yes
+  register: oracle_installed
+  failed_when: oracle_installed.rc == 0
+
+- debug:
+    msg: "Database {{ oracle_db_name }} is in /etc/oratab."
+  when: oracle_installed.rc == 0
+
+- debug:
+    msg: "Database {{ oracle_db_name }} is not in /etc/oratab."
+  when: oracle_installed.rc != 0
+
+- name: oradb_install | Install Oracle preinstall
+  package: name=oracle-database-preinstall-{{ oracle_version }} state=present
+
+- name: create the oracle installation path
+  file:
+    path: "{{ item }}"
+    state: directory
+    group: "oinstall"
+    owner: "oracle"
+    mode: 0755
+  with_items:
+    - "{{ oracle_base_root }}"
+    - "{{ oracle_base }}"
+    - "{{ oracle_home }}"
+    - "{{ oracle_data_fs }}"
+    - "{{ oracle_stage }}"
+
+- name: deploy profile for oracle environment
+  ansible.builtin.template:
+    src: oraenv.j2
+    dest: /home/oracle/.{{ oracle_db_name }}.env
+    owner: oracle
+    group: oinstall
+    mode: 0644
+
+- name: Check if {{ oracle_home }} folder is empty before proceeding
+  find:
+    paths: "{{ oracle_home }}"
+  register: filesFound
+
+#- fail:
+#     msg: "The {{ oracle_home }} folder is not empty."
+#  when: filesFound.matched > 0
+
+- debug:
+    msg: "The {{ oracle_home }} folder is empty. Proceeding."
+  when: filesFound.matched == 0
+
+- name: unzip installer
+  unarchive:
+    src: "{{ item.image }}"
+    dest: "{{ oracle_home }}"
+    owner: oracle
+    group: oinstall
+  when: item.version == "{{ oracle_version }}" and filesFound.matched == 0
+  with_items: "{{ oracle_images }}"
+
+- name: install_home_db | Setup response file for install (DB)
+  ansible.builtin.template:
+    src: "db-install.rsp.{{ oracle_version }}.j2"
+    dest: "{{ oracle_stage }}/db_install.rsp"
+    owner: oracle
+    group: oinstall
+    mode: 0600
+
+#- name: install_home_db | clear orainverntory
+#  ansible.builtin.shell: /bin/rm -rf {{ oracle_inventory_loc }}/*
+
+- name: install_home_db | Check if DB-server is already installed
+  ansible.builtin.shell: grep -w {{ oracle_home }} "{{ oracle_inventory_loc }}/ContentsXML/inventory.xml" | grep -iv 'REMOVED=.T.' | awk  '{print $3}' | cut -f2 -d'"'
+  register: existing_dbhome
+  changed_when: false
+  failed_when: false
+
+- debug:
+    msg: "{{ existing_dbhome }}"
+
+- name: install_home_db | Install Oracle Database Server
+  ansible.builtin.shell: |
+    source /home/oracle/.{{ oracle_db_name }}.env && {{ oracle_home }}/runInstaller -responseFile {{ oracle_stage }}/db_install.rsp -silent -ignorePrereq -waitforcompletion
+  become: true
+  become_user: oracle
+  register: oradbinstall
+  when: oracle_home not in existing_dbhome.stdout_lines
+  failed_when: oradbinstall.rc not in [0, 6]
+  environment:
+    CV_ASSUME_DISTID: OL7
+
+- debug:
+    msg: "{{ oradbinstall }}"
+
+- name: install_home_db | Run orainstRoot.sh script after installation
+  ansible.builtin.shell: "{{ oracle_inventory_loc }}/orainstRoot.sh"
+  when: oradbinstall.changed and oradbinstall.stdout_lines is search("orainstRoot.sh")
+
+- name: install_home_db | Run root.sh script after installation
+  ansible.builtin.shell: "{{ oracle_home }}/root.sh"
+  when: oradbinstall.changed
