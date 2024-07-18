@@ -1,0 +1,16 @@
+# Oracle Settings
+export TMP=/tmp
+export TMPDIR=$TMP
+#export ORACLE_HOSTNAME=`/bin/hostname`
+export ORACLE_BASE={{ oracle_base }}
+export ORACLE_HOME={{ oracle_home }}
+export ORACLE_UNQNAME={{ oracle_db_name }}
+export ORACLE_SID={{ oracle_db_name }}
+export ORACLE_TERM=xterm
+export BASE_PATH=/usr/sbin:$PATH
+export PATH=$ORACLE_HOME/OPatch:$ORACLE_HOME/bin:$BASE_PATH
+export LD_LIBRARY_PATH=$ORACLE_HOME/lib:/lib:/usr/lib
+export CLASSPATH=$ORACLE_HOME/jlib:$ORACLE_HOME/rdbms/jlib
+
+alias taila='tail -200f $ORACLE_BASE/diag/rdbms/${ORACLE_UNQNAME,,}/${ORACLE_SID}/trace/alert_${ORACLE_SID}.log'
+alias sqla='sqlplus / as sysdba'
