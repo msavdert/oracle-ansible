@@ -1,0 +1,33 @@
+---
+#-----------------------------------------------------------------
+# ORASW
+#-----------------------------------------------------------------
+oracle_version: 19c # Oracle versions avaialble: 19c, 21c, 23ai
+oracle_edition: EE # Oracle Editions avaialble: EE, SE2
+oracle_base_root: /u01
+oracle_base: "{{ oracle_base_root }}/app/oracle"
+oracle_home: "{{ oracle_base }}/product/{{ oracle_version }}/dbhome_1"
+oracle_stage: "{{ oracle_base_root }}/software" # location for temporary installation files
+oracle_db_name: db
+oracle_db_syspass: password # password for the sysdba
+oracle_hostname: "{{ inventory_hostname }}"
+oracle_data_fs: /oradata
+
+oracle_installer_path: /tmp
+
+# array  os images avaialbe
+oracle_images:
+    - { image: "{{ oracle_installer_path }}/LINUX.X64_193000_db_home.zip", version: "19c" }
+    - { image: "{{ oracle_installer_path }}/LINUX.X64_213000_db_home.zip", version: "21c" }
+
+oracle_inventory_loc: /u01/app/oraInventory
+
+
+
+
+oracle_storage_type: FILE_SYSTEM_STORAGE # FILE_SYSTEM_STORAGE | ASM_STORAGE
+
+ora_user_env:
+  ORACLE_BASE: "{{ oracle_base }}"
+  ORACLE_SID: "{{ oracle_db_name }}"
+  ORACLE_HOME: "{{ oracle_home }}"
